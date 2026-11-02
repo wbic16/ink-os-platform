@@ -25,7 +25,7 @@ async function selectedPath(path) {
   const absolute = resolve(path);
   return join(await realpath(dirname(absolute)), basename(absolute));
 }
-async function syncDirectory(path) { const file = await open(path, 'r'); try { await file.sync(); } finally { await file.close(); } }
+async function syncDirectory(path) { if (process.platform === 'win32') return; const file = await open(path, 'r'); try { await file.sync(); } finally { await file.close(); } }
 
 /** Probe only the saved loopback health endpoint, without credentials. The
  * explicit offline assertion remains necessary: absent metadata/refused TCP is

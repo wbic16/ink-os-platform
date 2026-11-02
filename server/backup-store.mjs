@@ -49,7 +49,7 @@ function recordBytes(record) {
   const bytes = Buffer.from(JSON.stringify(record)); if (bytes.length > CHUNK_BYTES) throw Error('Backup record exceeds 64 KiB');
   const length = Buffer.alloc(4); length.writeUInt32BE(bytes.length); return Buffer.concat([length, bytes]);
 }
-async function syncDirectory(path) { const handle = await open(path, 'r'); try { await handle.sync(); } finally { await handle.close(); } }
+async function syncDirectory(path) { if (process.platform === 'win32') return; const handle = await open(path, 'r'); try { await handle.sync(); } finally { await handle.close(); } }
 function outside(source, destination) { const inside = relative(source, destination); if (!inside || !inside.startsWith('..' + sep) && inside !== '..' && !parse(inside).root) throw Error('Backup archive must be outside the source tree'); }
 
 // Catalog mappings live only inside the authenticated ciphertext. Read a bounded

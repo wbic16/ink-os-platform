@@ -4,10 +4,10 @@ import{desktopFile}from'../shared/desktop-placements.mjs';
 import{mkdir,readFile,writeFile,rename,open,readdir,access,unlink,rm}from'node:fs/promises';import{join,dirname}from'node:path';import{SharedState,register}from'../shared/state.mjs';import{TextWorkers}from'./text-workers.mjs';import{hash,Conflict}from'./world.mjs';import{WebSocketServer}from'ws';
 const fail=(status,message)=>{throw Object.assign(Error(message),{status});};
 const keyPath=key=>'/'+key.replaceAll('~','~0').replaceAll('/','~1');
-const syncDirectory=async path=>{const handle=await open(path,'r');try{await handle.sync();}finally{await handle.close();}};
+const syncDirectory=async path=>{if(process.platform==='win32')return;const handle=await open(path,'r');try{await handle.sync();}finally{await handle.close();}};
 export class Collaboration{
  constructor({directory,world,storage}){this.directory=join(directory,'collaboration');this.world=world;this.storage=storage;this.versionTail=Promise.resolve();this.documents=new Map();this.documentMetadata=new Map();this.objectBindings=new Map();this.objectTails=new Map();this.textWorkers=new TextWorkers();world.collaboration=this;}
- async saveMetadata(meta){const dir=join(this.directory,meta.id),path=join(dir,'meta.json');await writeFile(path+'.next',JSON.stringify(meta),{mode:0o600,flush:true});await rename(path+'.next',path);const handle=await open(dir,'r');try{await handle.sync();}finally{await handle.close();}await syncDirectory(this.directory);this.registerMetadata(meta);}
+ async saveMetadata(meta){const dir=join(this.directory,meta.id),path=join(dir,'meta.json');await writeFile(path+'.next',JSON.stringify(meta),{mode:0o600,flush:true});await rename(path+'.next',path);await syncDirectory(dir);await syncDirectory(this.directory);this.registerMetadata(meta);}
  async readSeedFile(id){
   const object=this.world.get(id);if(!object||!desktopFile(object))fail(404,'Draft source file is unavailable');
   const bytes=object.location?await this.storage?.get(object.location):Buffer.from(object.body||'');if(!bytes)fail(503,'File storage is unavailable');if(bytes.length>24*1024*1024)fail(413,'Text exceeds 24 MiB');

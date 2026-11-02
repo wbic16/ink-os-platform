@@ -9,7 +9,7 @@ const sha = value => createHash('sha256').update(value).digest('hex');
 const fail = (status, message) => { throw Object.assign(Error(message), { status }); };
 const states = new Set(['queued', 'running', 'ready', 'failed', 'interrupted', 'cancelled', 'deleting', 'deleted']);
 const pending = value => ['queued', 'running'].includes(value.status);
-async function syncDirectory(path) { const file = await open(path, 'r'); try { await file.sync(); } finally { await file.close(); } }
+async function syncDirectory(path) { if (process.platform === 'win32') return; const file = await open(path, 'r'); try { await file.sync(); } finally { await file.close(); } }
 
 /** One owned journal and encrypted archive directory, excluded from its own
  * snapshots. Passwords exist only in the active operation's memory. Restart
