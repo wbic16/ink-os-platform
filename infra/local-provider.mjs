@@ -14,8 +14,21 @@ import { pipeline } from 'node:stream/promises';
 
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json', '.wasm': 'application/wasm', '.woff2': 'font/woff2' };
 
+function originTemplateFromHostname(hostname) {
+  const invalid = () => Error('INK_OS_APP_HOSTNAME must be a hostname like apps.example.com, optionally with a scheme and port (e.g. https://apps.example.com:8443); paths, queries, fragments and credentials are not allowed.');
+  const value = String(hostname).trim(), explicitPort = value.match(/:(\d+)$/)?.[1];
+  let parsed;
+  try { parsed = new URL(value.includes('://') ? value : 'http://' + value); } catch { throw invalid(); }
+  if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password || parsed.pathname !== '/' || parsed.search || parsed.hash) throw invalid();
+  let host = parsed.hostname; if (host.endsWith('.')) host = host.slice(0, -1);
+  if (!host) throw invalid();
+  return `${parsed.protocol.slice(0, -1)}://__RELEASE__.${host}:${explicitPort || Number(process.env.PORT || 4318)}`;
+}
+
 export class LocalProvider {
-  constructor({ originTemplate = process.env.INK_OS_APP_ORIGIN_TEMPLATE, compute } = {}) {
+  constructor({ originTemplate = process.env.INK_OS_APP_ORIGIN_TEMPLATE, appHostname = process.env.INK_OS_APP_HOSTNAME, compute } = {}) {
+    if (originTemplate && appHostname) console.log('INK_OS_APP_HOSTNAME is ignored because INK_OS_APP_ORIGIN_TEMPLATE is set.');
+    if (!originTemplate && appHostname) originTemplate = originTemplateFromHostname(appHostname);
     if (originTemplate && !originTemplate.includes('{release}') && !originTemplate.includes('__RELEASE__')) throw Error('App origin template must contain a release placeholder.');
     this.servers = new Map(); this.originTemplate = originTemplate; this.compute = compute;
     this.adapterRequests = new Set(); this.requests = new Set(); this.responses = new Set(); this.admissionGate = null;
