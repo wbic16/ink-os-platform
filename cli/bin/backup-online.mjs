@@ -31,7 +31,7 @@ export async function onlineBackupCLI({ sub, id, options, request, download, pri
       for await (const bytes of archive.chunks) { let offset = 0; while (offset < bytes.length) { const { bytesWritten } = await file.write(bytes, offset, bytes.length - offset); if (!bytesWritten) throw Error('Backup download write stopped.'); offset += bytesWritten; } }
       await file.sync(); await file.close(); file = null;
       await link(temporary, destination); await unlink(temporary);
-      const directory = await open(parent, 'r'); try { await directory.sync(); } finally { await directory.close(); }
+      if (process.platform !== 'win32') { const directory = await open(parent, 'r'); try { await directory.sync(); } finally { await directory.close(); } }
       result = { id, output: destination, bytes: archive.bytes, sha256: archive.sha256 };
     } finally { await archive.cancel(); await file?.close(); await unlink(temporary).catch(error => { if (error.code !== 'ENOENT') throw error; }); }
   }

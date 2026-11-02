@@ -23,7 +23,7 @@ const validPool = value => value && typeof value.admissionClosed === 'boolean' &
 const idlePool = value => validPool(value) && value.admissionClosed && ['active', 'held', 'uncertain', 'oldRuntimeSlotsRemaining', 'incompatibleRuntimeOverrides'].every(key => value[key] === 0);
 const initialPool = () => ({ admissionClosed: false, active: 0, held: 0, uncertain: 1, oldRuntimeSlotsRemaining: 0, incompatibleRuntimeOverrides: 0, retired: [], customRuntimeImages: [] });
 export { idle as quiescentHostActivity, idlePool as quiescentRuntimePool };
-const directorySync = async path => { const handle = await open(path, 'r'); try { await handle.sync(); } finally { await handle.close(); } };
+const directorySync = async path => { if (process.platform === 'win32') return; const handle = await open(path, 'r'); try { await handle.sync(); } finally { await handle.close(); } };
 
 /** A durable admission gate. It never stops the host or a worker. The adapter
  * must preserve already-admitted work and prove its own runtime quiescence. */

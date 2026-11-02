@@ -48,7 +48,7 @@ export class Storage {
   async put(bytes,mime='application/octet-stream',{retain=false}={}){const digest=hash(bytes);this.inflight.set(digest,(this.inflight.get(digest)||0)+1);let released=false;const release=()=>{if(released)return;released=true;const count=(this.inflight.get(digest)||1)-1;count?this.inflight.set(digest,count):this.inflight.delete(digest);};try{const result=await this.lockBlob(digest,()=>this.putBytes(bytes,mime));if(!retain)release();return{...result,release};}catch(error){release();throw error;}}
   async putBytes(bytes, mime = 'application/octet-stream') {
     const digest = hash(bytes); const key = `${this.config?.prefix||''}objects/${digest}`;
-    if(!this.r2&&!this.config){const directory=join(this.directory,'blobs'),path=join(directory,digest);await writeFile(path+'.next',bytes,{mode:0o600,flush:true});await rename(path+'.next',path);const handle=await open(directory,'r');try{await handle.sync();}finally{await handle.close();}}
+    if(!this.r2&&!this.config){const directory=join(this.directory,'blobs'),path=join(directory,digest);await writeFile(path+'.next',bytes,{mode:0o600,flush:true});await rename(path+'.next',path);if(process.platform!=='win32'){const handle=await open(directory,'r');try{await handle.sync();}finally{await handle.close();}}}
     if(this.r2){await this.r2Request('/objects/'+digest,{method:'PUT',headers:{'Content-Type':mime},body:bytes});return{location:`r2://${this.r2.bucket}/objects/${digest}`,digest,bytes:bytes.length,mime};}
     if (this.config) {
       await this.client().send(new PutObjectCommand({ Bucket: this.config.bucket, Key: key, Body: bytes, ContentType: mime }));

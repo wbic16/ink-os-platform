@@ -27,7 +27,7 @@ export async function writePrivateJSON(directory, name, value) {
   try {
     await file.writeFile(JSON.stringify(value)); await file.sync(); await file.close();
     await rename(temporary, join(directory, name));
-    const parent = await open(directory, 'r'); try { await parent.sync(); } finally { await parent.close(); }
+    if (process.platform !== 'win32') { const parent = await open(directory, 'r'); try { await parent.sync(); } finally { await parent.close(); } }
   } finally { await file.close(); await unlink(temporary).catch(error => { if (error.code !== 'ENOENT') throw error; }); }
 }
 export async function readProviderBinding(directory, kind, expectedInstanceId) {

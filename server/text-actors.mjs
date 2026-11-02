@@ -23,7 +23,7 @@ export async function reserveTextActors(doc,leaseId,count=64){
  if(start+count-1>maxActor)fail(409,'Text actor identity space is exhausted');
  const lease={leaseId,start,count},next={version:1,leases:[...registry.leases,lease]},path=join(doc.dir,'actors.json');
  await writeFile(path+'.next',JSON.stringify(next),{mode:0o600,flush:true});await rename(path+'.next',path);doc.actorRegistry=next;
- const directory=await open(doc.dir,'r');try{await directory.sync();}finally{await directory.close();}
+ if(process.platform!=='win32'){const directory=await open(doc.dir,'r');try{await directory.sync();}finally{await directory.close();}}
  return lease;
 }
 export async function validateTextActors(doc,updates,leaseId){

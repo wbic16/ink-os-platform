@@ -133,7 +133,7 @@ export function createMaintenanceHostAdapter({platform,world=platform?.world,sto
     // journals; projection work starts only after that barrier has released.
     await c.captureVersion(()=>world.captureVersion());
     for(const item of c.documents.values()){
-      const doc=await item;check(!doc.deleted&&!doc.writeError,'MAINTENANCE_DOCUMENT_UNREADY','A collaborative journal needs recovery');clearTimeout(doc.projectTimer);doc.projectTimer=null;doc.projectionEpoch=(doc.projectionEpoch||0)+1;await doc.tail;await c.projectCommitted(doc);await doc.tail;await c.checkpoint(doc);await doc.journal.sync();const directory=await open(doc.dir,'r');try{await directory.sync();}finally{await directory.close();}
+      const doc=await item;check(!doc.deleted&&!doc.writeError,'MAINTENANCE_DOCUMENT_UNREADY','A collaborative journal needs recovery');clearTimeout(doc.projectTimer);doc.projectTimer=null;doc.projectionEpoch=(doc.projectionEpoch||0)+1;await doc.tail;await c.projectCommitted(doc);await doc.tail;await c.checkpoint(doc);await doc.journal.sync();if(process.platform!=='win32'){const directory=await open(doc.dir,'r');try{await directory.sync();}finally{await directory.close();}}
     }
     await healthy();const after=queues();if(await pending([...after.writers,...after.publications]))unchanged();await Promise.all([...after.writers,...after.publications].filter(Boolean));if(!allZero(await activity()))unchanged();
     await world.transact(()=>world.persist());await healthy();if(!allZero(await activity()))unchanged();return{flushed:true};

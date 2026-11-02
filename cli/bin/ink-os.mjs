@@ -51,7 +51,7 @@ async function saveConnection(path,value){
  if(!directory.isDirectory()||process.getuid&&directory.uid!==process.getuid())throw Error('Choose an owned private directory for INK_OS_CONFIG');
  if((directory.mode&0o777)!==0o700&&[resolve(homedir()),resolve(tmpdir()),'/'].includes(parent))throw Error('Choose a dedicated private INK_OS_CONFIG directory instead of changing shared directory permissions');
  await chmod(parent,0o700);const temporary=join(parent,'.ink-os-connection-'+randomBytes(12).toString('hex'));let file;
- try{file=await open(temporary,'wx',0o600);await file.writeFile(JSON.stringify(value));await file.sync();await file.close();file=null;await rename(temporary,path);const handle=await open(parent,'r');try{await handle.sync();}finally{await handle.close();}}
+ try{file=await open(temporary,'wx',0o600);await file.writeFile(JSON.stringify(value));await file.sync();await file.close();file=null;await rename(temporary,path);if(process.platform!=='win32'){const handle=await open(parent,'r');try{await handle.sync();}finally{await handle.close();}}}
  finally{await file?.close();await rm(temporary,{force:true});}
 }
 export async function filesFrom(directory){const files=[];async function visit(path){for(const entry of await readdir(path,{withFileTypes:true})){if(entry.name==='node_modules'||entry.name==='.git'||/^\.(env|dev.vars|npmrc)(\.|$)/.test(entry.name))continue;const full=join(path,entry.name);if(entry.isSymbolicLink())throw Error('Release files cannot contain symlinks');if(entry.isDirectory())await visit(full);else files.push({path:relative(directory,full).split(sep).join('/'),base64:(await readFile(full)).toString('base64')});}}await visit(directory);return files;}

@@ -27,7 +27,7 @@ async function boundedFile(path, limit) {
   let f; try { f = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW); } catch (e) { if (e.code === 'ENOENT') return null; throw e; }
   try { const s = await f.stat(); if (!s.isFile() || s.size > limit) fail('Storage alias journal exceeds its bound'); const b = Buffer.alloc(s.size + 1); let n = 0; while (n < b.length) { const part = await f.read(b, n, b.length - n, n); if (!part.bytesRead) break; n += part.bytesRead; } if (n !== s.size) fail('Storage alias journal changed during read'); return b.subarray(0, n); } finally { await f.close(); }
 }
-async function syncDirectory(path) { const f = await open(path, 'r'); try { await f.sync(); } finally { await f.close(); } }
+async function syncDirectory(path) { if (process.platform === 'win32') return; const f = await open(path, 'r'); try { await f.sync(); } finally { await f.close(); } }
 
 /** Explicit aliases never authorize reads from the old store. The adapter may
  * read only currently configured destinations, and must bound returned bytes. */

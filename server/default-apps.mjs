@@ -6,8 +6,10 @@ const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 async function save(path, value) {
   await writeFile(path + '.next', JSON.stringify(value), { mode: 0o600, flush: true });
   await rename(path + '.next', path);
-  const directory = await open(dirname(path), 'r');
-  try { await directory.sync(); } finally { await directory.close(); }
+  if (process.platform !== 'win32') {
+    const directory = await open(dirname(path), 'r');
+    try { await directory.sync(); } finally { await directory.close(); }
+  }
 }
 
 // Install only on a new World. A private journal makes interrupted first starts

@@ -26,7 +26,7 @@ const encoded = bytes => Buffer.from(bytes).toString('base64');
 const decoded = text => { check(typeof text === 'string' && Buffer.from(text,'base64').toString('base64') === text,400,'Checkpoint bytes must be canonical base64'); return new Uint8Array(Buffer.from(text,'base64')); };
 const keyPath = key => '/' + key.replaceAll('~','~0').replaceAll('/','~1');
 const pathKey = path => path.slice(1).replaceAll('~1','/').replaceAll('~0','~');
-const syncDirectory = async path => { const handle = await open(path,'r'); try { await handle.sync(); } finally { await handle.close(); } };
+const syncDirectory = async path => { if (process.platform === 'win32') return; const handle = await open(path,'r'); try { await handle.sync(); } finally { await handle.close(); } };
 async function directory(path) { await mkdir(path,{recursive:true,mode:0o700}); check((await lstat(path)).isDirectory() && !(await lstat(path)).isSymbolicLink(),503,'Migration directory must not be an alias'); }
 async function regular(path,max) { let handle;try{handle=await open(path,constants.O_RDONLY|constants.O_NOFOLLOW);}catch(error){if(error.code==='ELOOP')fail(409,'Symbolic links are not supported migration inputs');throw error;} try { const info=await handle.stat();check(info.isFile()&&info.size<=max,413,'Migration file exceeds its bound');const bytes=Buffer.alloc(info.size+1);let used=0;while(used<bytes.length){const part=await handle.read(bytes,used,bytes.length-used,used);if(!part.bytesRead)break;used+=part.bytesRead;}check(used===info.size,409,'Migration file changed while reading');return bytes.subarray(0,used); } finally { await handle.close(); } }
 async function readJSON(path,max) { return JSON.parse(await regular(path,max)); }

@@ -68,7 +68,7 @@ export class World {
     const temp = join(this.directory, 'world.json.next');
     await writeFile(temp, JSON.stringify({ format: 'ink-os-world-v2', snapshot, history: this.history, mutations: this.mutations, restorations:this.restorations, versionOffset: this.versionOffset, purged: [...this.purged],blobRefs:this.blobRefs,retiredBlobs:[...this.retiredBlobs] }), { mode: 0o600, flush: true });
     await rename(temp, join(this.directory, 'world.json'));
-    const directory=await open(this.directory,'r');try{await directory.sync();}finally{await directory.close();}
+    if(process.platform!=='win32'){const directory=await open(this.directory,'r');try{await directory.sync();}finally{await directory.close();}}
   }
   transact(run) {
     const next = this.tail.then(async()=>{try{return await run();}finally{this.statsCache=undefined;}}); this.tail = next.catch(() => {}); return next;
