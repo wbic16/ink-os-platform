@@ -48,7 +48,7 @@ export class Maintenance {
     await mkdir(this.directory,{recursive:true,mode:0o700}); const info=await lstat(this.directory); check(info.isDirectory()&&!info.isSymbolicLink(),503,'Maintenance storage must be an instance directory');
     let handle;
     try {
-      handle=await open(this.path,constants.O_RDONLY|constants.O_NOFOLLOW); const info=await handle.stat(); check(info.isFile()&&!(info.mode&0o077)&&info.size<=16*1024*1024,503,'Invalid private maintenance store');
+      handle=await open(this.path,constants.O_RDONLY|constants.O_NOFOLLOW); const info=await handle.stat(); check(info.isFile()&&!(process.platform==='win32'?0:info.mode&0o077)&&info.size<=16*1024*1024,503,'Invalid private maintenance store');
       const bytes=await handle.readFile(); check(bytes.length===info.size,503,'Maintenance store changed while reading'); const saved=JSON.parse(bytes),{digest,...body}=saved;
       check(exact(body,['format','instanceId','activeOperation','operations'])&&body.format===format&&body.instanceId===this.instanceId&&digest===hash(body)&&Array.isArray(body.operations)&&body.operations.length<=256&&(body.activeOperation===null||hex(body.activeOperation,32)),503,'Maintenance store failed integrity checks');
       const ids=new Set();

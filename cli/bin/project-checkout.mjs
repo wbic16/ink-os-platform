@@ -33,7 +33,7 @@ async function readBinding(git) {
     const handle = await open(path, constants.O_RDONLY | (constants.O_NOFOLLOW || 0));
     try {
       const info = await handle.stat();
-      if (!info.isFile() || info.dev !== before.dev || info.ino !== before.ino || info.size > 8192 || process.getuid && info.uid !== process.getuid() || (info.mode & 0o077)) throw Error('Project checkout metadata must be an owned private regular file.');
+      if (!info.isFile() || info.dev !== before.dev || info.ino !== before.ino || info.size > 8192 || process.getuid && info.uid !== process.getuid() || (process.platform === 'win32' ? 0 : info.mode & 0o077)) throw Error('Project checkout metadata must be an owned private regular file.');
       const raw = await handle.readFile('utf8');
       return { raw, value: binding(JSON.parse(raw)) };
     } finally { await handle.close(); }

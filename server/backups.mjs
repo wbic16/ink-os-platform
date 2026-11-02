@@ -22,12 +22,12 @@ export class Backups {
   async open() {
     await mkdir(this.root, { recursive: true, mode: 0o700 });
     const directory = await lstat(this.root);
-    if (!directory.isDirectory() || directory.isSymbolicLink() || directory.mode & 0o077 || process.getuid && directory.uid !== process.getuid()) throw Error('Backup directory must be owned and private.');
+    if (!directory.isDirectory() || directory.isSymbolicLink() || (process.platform === 'win32' ? 0 : directory.mode & 0o077) || process.getuid && directory.uid !== process.getuid()) throw Error('Backup directory must be owned and private.');
     let file;
     try {
       file = await open(join(this.root, 'journal.json'), constants.O_RDONLY | constants.O_NOFOLLOW);
       const stat = await file.stat();
-      if (!stat.isFile() || stat.nlink !== 1 || stat.mode & 0o077 || stat.size > 2 * 1024 * 1024 || process.getuid && stat.uid !== process.getuid()) throw Error('Invalid private backup journal.');
+      if (!stat.isFile() || stat.nlink !== 1 || (process.platform === 'win32' ? 0 : stat.mode & 0o077) || stat.size > 2 * 1024 * 1024 || process.getuid && stat.uid !== process.getuid()) throw Error('Invalid private backup journal.');
       const bytes = Buffer.alloc(stat.size + 1); let size = 0;
       while (size < bytes.length) { const part = await file.read(bytes, size, bytes.length - size, size); if (!part.bytesRead) break; size += part.bytesRead; }
       if (size !== stat.size) throw Error('Backup journal changed while reading.');
@@ -114,7 +114,7 @@ export class Backups {
   async openArchive(operation) {
     const job = this.get(operation); if (job.status !== 'ready') fail(409, 'Backup is not ready.');
     const file = await open(this.archive(operation), constants.O_RDONLY | constants.O_NOFOLLOW);
-    try { const stat = await file.stat(); if (!stat.isFile() || stat.nlink !== 1 || stat.size !== job.bytes || stat.mode & 0o077) fail(503, 'Backup archive is unavailable or changed.'); return { file, job }; }
+    try { const stat = await file.stat(); if (!stat.isFile() || stat.nlink !== 1 || stat.size !== job.bytes || (process.platform === 'win32' ? 0 : stat.mode & 0o077)) fail(503, 'Backup archive is unavailable or changed.'); return { file, job }; }
     catch (error) { await file.close(); throw error; }
   }
   stopAccepting() { this.accepting = false; }
