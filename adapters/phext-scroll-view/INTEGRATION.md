@@ -6,16 +6,18 @@ of `siliconjungle/ink-os-platform`.
 
 - **Additions only.** No existing upstream file is modified by this branch;
   everything here is new, under `adapters/phext-scroll-view/`.
-- **Same publication route as any adapter.** Upstream, adapters are
-  independently published packages, and this copy is published the same
-  way — from a checkout of this branch:
-
-  ```text
-  ink-os adapters publish adapters/phext-scroll-view
-  ```
-
-  (per `docs/adapters.md`). The host preserves the source file and creates
-  a linked result — here, a `text/html` "Scroll view" — with provenance.
+- **Same publication route as any adapter — with one correction.**
+  Upstream, adapters are independently published packages (per
+  `docs/adapters.md`). CORRECTED 2026-11-01 after a clean-room test:
+  `ink-os adapters publish adapters/phext-scroll-view` from inside this
+  platform checkout is REFUSED — the CLI's `committedSource()` requires
+  the adapter directory to be a Git repository root, which a subdirectory
+  of this checkout is not. The working route is to publish a standalone
+  committed copy of this directory (its own Git repo), which is exactly
+  how the original live verification was run and what the downloadable
+  `ink-os-phext-example` bundle's `run-example.sh` does automatically.
+  The host preserves the source file and creates a linked result — here,
+  a `text/html` "Scroll view" — with provenance.
 - **What it does.** Input: `.phext` files. Output: a standalone HTML scroll
   view — a table of contents listing every scroll coordinate in document
   order, then each scroll under its coordinate heading, text HTML-escaped
